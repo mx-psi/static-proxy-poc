@@ -39,6 +39,11 @@ func run(modpath, version, src, out, stamp string) error {
 		return err
 	}
 
+	// Copy the repo LICENSE into the zip
+	if err := ensureLicense(src); err != nil {
+		return err
+	}
+
 	// <version>.zip: entries are prefixed with "<modpath>@<version>/".
 	zipPath := filepath.Join(out, version+".zip")
 	f, err := os.Create(zipPath)
@@ -82,4 +87,30 @@ func run(modpath, version, src, out, stamp string) error {
 
 func write(path string, b []byte) error {
 	return os.WriteFile(path, b, 0o644)
+}
+
+// ensureLicense copies a LICENSE from the nearest ancestor dir into src if src lacks
+// its own, erroring if none is found.
+func ensureLicense(src string) error {
+	dst := filepath.Join(src, "LICENSE")
+	if _, err := os.Stat(dst); err == nil {
+		return nil // module already ships its own LICENSE.
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+
+	for dir := filepath.Dir(src); ; {
+		b, err := os.ReadFile(filepath.Join(dir, "LICENSE"))
+		if err == nil {
+			return write(dst, b)
+		}
+		if !os.IsNotExist(err) {
+			return err
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir { // reached the filesystem root.
+			return fmt.Errorf("no LICENSE found in %s or any ancestor directory", src)
+		}
+		dir = parent
+	}
 }
