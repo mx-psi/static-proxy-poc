@@ -10,3 +10,5 @@ import _ "embed"
 
 //go:embed notice.txt
 var Notice string
+
+const SourceRepository = "github.com/mx-psi/static-proxy-poc"
