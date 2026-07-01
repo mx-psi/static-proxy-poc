@@ -1,0 +1,15 @@
+# Static Go module proxy. No code. Proxy protocol lives under /proxy.
+# First match wins; static rules first, then wildcard rules.
+
+# Vanity discovery: serve the go-import meta as a static page (200 rewrite, not a redirect).
+/embedmod                                                   /go-import   200
+
+# Proxy protocol under /proxy -> GitHub release assets (302). @latest/list ride the latest release.
+/proxy/go-vanity-proxy.pages.dev/embedmod/@latest           https://github.com/mx-psi/static-proxy-poc/releases/latest/download/latest.info   302
+/proxy/go-vanity-proxy.pages.dev/embedmod/@v/list           https://github.com/mx-psi/static-proxy-poc/releases/latest/download/list          302
+
+# Wildcard rules. *.info/.mod/.zip capture the version and reuse it as the tag and filename.
+/embedmod/*                                                 /go-import   200
+/proxy/go-vanity-proxy.pages.dev/embedmod/@v/*.info         https://github.com/mx-psi/static-proxy-poc/releases/download/:splat/:splat.info   302
+/proxy/go-vanity-proxy.pages.dev/embedmod/@v/*.mod          https://github.com/mx-psi/static-proxy-poc/releases/download/:splat/:splat.mod    302
+/proxy/go-vanity-proxy.pages.dev/embedmod/@v/*.zip          https://github.com/mx-psi/static-proxy-poc/releases/download/:splat/:splat.zip    302

@@ -1,0 +1,5 @@
+# CI-only embedded file: generated at release time, never committed.
+embedmod/notice.txt
+
+# mkproxy binary (build it locally with `go build`)
+/tools/mkproxy/mkproxy

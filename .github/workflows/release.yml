@@ -1,0 +1,58 @@
+# Builds the static GOPROXY artifacts for a tagged version and publishes them as GitHub
+# release assets. notice.txt is generated here and never committed.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  MODULE: go-vanity-proxy.pages.dev/embedmod
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      # Generate embedmod/notice.txt from the release metadata (CI-only, never committed).
+      - name: Generate embedded artifact
+        working-directory: embedmod
+        run: |
+          EMBED_VERSION="$GITHUB_REF_NAME" \
+          EMBED_COMMIT="$(git rev-parse --short HEAD)" \
+          EMBED_DATE="$(git log -1 --format=%cd --date=short)" \
+          go generate ./...
+
+      # Build <tag>.{info,mod,zip} + latest.info into out/.
+      - name: Build proxy artifacts
+        run: |
+          mkdir -p out
+          ts="$(git log -1 --format=%cI)"
+          (cd tools/mkproxy && go run . "$MODULE" "$GITHUB_REF_NAME" \
+            "$GITHUB_WORKSPACE/embedmod" "$GITHUB_WORKSPACE/out" "$ts")
+
+      # Cumulative version list (all release tags plus this one). Backs @v/list.
+      - name: Build version list
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { gh release list --json tagName -q '.[].tagName'; echo "$GITHUB_REF_NAME"; } \
+            | grep '^v' | sort -u -V > out/list
+
+      # Publish. latest.info and list go on this release, which becomes "latest".
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="$GITHUB_REF_NAME"
+          gh release create "$v" --title "$v" --notes "module $v" --latest || true
+          gh release upload "$v" \
+            "out/$v.info" "out/$v.mod" "out/$v.zip" out/latest.info out/list --clobber

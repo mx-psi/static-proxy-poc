@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="go-import" content="go-vanity-proxy.pages.dev/embedmod mod https://go-vanity-proxy.pages.dev/proxy">
+    <title>go-vanity-proxy.pages.dev/embedmod</title>
+</head>
+
+<body>
+    <h1>go-vanity-proxy.pages.dev/embedmod</h1>
+    <p>This is a PoC on a static Go module proxy. See
+        <a href="https://github.com/mx-psi/static-proxy-poc">github.com/mx-psi/static-proxy-poc</a>.
+    </p>
+    <p>Fetch the module through the proxy and print its embedded, CI-generated notice:</p>
+    <pre>
+mkdir demo &amp;&amp; cd demo &amp;&amp; go mod init demo
+go get go-vanity-proxy.pages.dev/embedmod@latest
+
+cat &gt; main.go &lt;&lt;'EOF'
+package main
+
+import (
+	"fmt"
+	"go-vanity-proxy.pages.dev/embedmod"
+)
+
+func main() { fmt.Print(embedmod.Notice) }
+EOF
+
+go run .
+</pre>
+</body>
+
+</html>
